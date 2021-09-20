@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/mmcshane/tallyotel"
-	"github.com/uber-go/tally"
-	"github.com/uber-go/tally/prometheus"
+	tally "github.com/uber-go/tally/v4"
+	"github.com/uber-go/tally/v4/prometheus"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
@@ -43,20 +43,19 @@ func main() {
 	defer closer.Close()
 
 	// allocate some instruments
-	m := metric.Must(global.Meter("foooo"))
-	ctr := m.NewInt64Counter("c1").Bind(attribute.Key("x").Int(1))
-	hist := m.NewInt64Histogram("h1").Bind(attribute.Key("x").Int(1))
-	durhist := m.NewFloat64Histogram("h2", metric.WithUnit(unit.Milliseconds))
+	m := metric.Must(global.Meter("foo"))
+	ctr := m.NewInt64Counter("loop_count").Bind(attribute.Key("x").Int(1))
+	hist := m.NewInt64Histogram("numbers").Bind(attribute.Key("x").Int(1))
+	durhist := m.NewFloat64Histogram("request_duration_seconds", metric.WithUnit(unit.Milliseconds))
 
 	// use the instruments
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	var i int64
-	start := time.Now()
 	for {
 		ctr.Add(ctx, 1)
 		hist.Record(ctx, i)
-		durhist.Record(ctx, float64(time.Since(start).Milliseconds()))
+		durhist.Record(ctx, 150.0)
 		i++
 		select {
 		case <-time.After(1 * time.Second):
