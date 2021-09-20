@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -17,10 +18,7 @@ import (
 	"go.opentelemetry.io/otel/metric/unit"
 )
 
-func main() {
-	// Global Setup
-	// ------------------------------------------------------------------------
-
+func DoGlobalSetup() io.Closer {
 	// Tally + Prometheus
 	r := prometheus.NewReporter(prometheus.Options{})
 	scope, closer := tally.NewRootScope(tally.ScopeOptions{
@@ -29,7 +27,6 @@ func main() {
 		CachedReporter: r,
 		Separator:      prometheus.DefaultSeparator,
 	}, 1*time.Second)
-	defer closer.Close()
 	http.Handle("/metrics", r.HTTPHandler())
 	go func() {
 		fmt.Println("Listening on http://localhost:8080/metrics")
@@ -38,31 +35,33 @@ func main() {
 
 	// install tallyotel as the default global MeterProvider
 	global.SetMeterProvider(tallyotel.NewMeterProvider(scope))
+	return closer
+}
 
-	// Local metric instruments
-	// ------------------------------------------------------------------------
+func main() {
+	closer := DoGlobalSetup()
+	defer closer.Close()
+
+	// allocate some instruments
 	m := metric.Must(global.Meter("foooo"))
 	ctr := m.NewInt64Counter("c1").Bind(attribute.Key("x").Int(1))
 	hist := m.NewInt64Histogram("h1").Bind(attribute.Key("x").Int(1))
 	durhist := m.NewFloat64Histogram("h2", metric.WithUnit(unit.Milliseconds))
 
+	// use the instruments
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-	go func() {
-		var i int64
-		start := time.Now()
-		for {
-			ctr.Add(ctx, 1)
-			hist.Record(ctx, i)
-			durhist.Record(ctx, float64(time.Since(start).Milliseconds()))
-			i++
-			select {
-			case <-time.After(1 * time.Second):
-			case <-ctx.Done():
-				return
-			}
+	var i int64
+	start := time.Now()
+	for {
+		ctr.Add(ctx, 1)
+		hist.Record(ctx, i)
+		durhist.Record(ctx, float64(time.Since(start).Milliseconds()))
+		i++
+		select {
+		case <-time.After(1 * time.Second):
+		case <-ctx.Done():
+			return
 		}
-	}()
-
-	<-ctx.Done()
+	}
 }
