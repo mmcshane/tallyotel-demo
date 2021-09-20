@@ -3,7 +3,7 @@ module github.com/mmcshane/tallyotel-prom
 go 1.17
 
 require (
-	github.com/mmcshane/tallyotel v0.1.0
+	github.com/mmcshane/tallyotel v0.4.0
 	github.com/uber-go/tally v3.4.2+incompatible
 	go.opentelemetry.io/otel v1.0.0-RC3
 	go.opentelemetry.io/otel/metric v0.23.0
