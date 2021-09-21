@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,7 +24,7 @@ func DoGlobalSetup() io.Closer {
 	r := prometheus.NewReporter(prometheus.Options{})
 	scope, closer := tally.NewRootScope(tally.ScopeOptions{
 		Prefix:         "my_service",
-		Tags:           map[string]string{},
+		Tags:           map[string]string{"a": "b"},
 		CachedReporter: r,
 		Separator:      prometheus.DefaultSeparator,
 	}, 1*time.Second)
@@ -39,6 +40,7 @@ func DoGlobalSetup() io.Closer {
 }
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
 	closer := DoGlobalSetup()
 	defer closer.Close()
 
@@ -55,7 +57,7 @@ func main() {
 	for {
 		ctr.Add(ctx, 1)
 		hist.Record(ctx, i)
-		durhist.Record(ctx, 150.0)
+		durhist.Record(ctx, (rand.Float64() * 1000.0))
 		i++
 		select {
 		case <-time.After(1 * time.Second):
