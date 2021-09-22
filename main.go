@@ -45,8 +45,8 @@ func main() {
 	defer closer.Close()
 
 	// allocate some instruments
-	m := metric.Must(global.Meter("foo"))
-	ctr := m.NewInt64Counter("loop_count").Bind(attribute.Key("x").Int(1))
+	m := metric.Must(global.Meter("foo.bar"))
+	ctr := m.NewInt64Counter("loops").Bind(attribute.Key("x").Int(1))
 	hist := m.NewInt64Histogram("numbers").Bind(attribute.Key("x").Int(1))
 	durhist := m.NewFloat64Histogram("request_duration_seconds", metric.WithUnit(unit.Milliseconds))
 
