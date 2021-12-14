@@ -46,8 +46,8 @@ func main() {
 
 	// allocate some instruments
 	m := metric.Must(global.Meter("foo.bar"))
-	ctr := m.NewInt64Counter("loops").Bind(attribute.Key("x").Int(1))
-	hist := m.NewInt64Histogram("numbers").Bind(attribute.Key("x").Int(1))
+	ctr := m.NewInt64Counter("loops")
+	hist := m.NewInt64Histogram("numbers")
 	durhist := m.NewFloat64Histogram("request_duration_seconds", metric.WithUnit(unit.Milliseconds))
 
 	// use the instruments
@@ -55,8 +55,8 @@ func main() {
 	defer stop()
 	var i int64
 	for {
-		ctr.Add(ctx, 1)
-		hist.Record(ctx, i)
+		ctr.Add(ctx, 1, attribute.Key("x").Int(1))
+		hist.Record(ctx, i, attribute.Key("x").Int(1))
 		durhist.Record(ctx, (rand.Float64() * 1000.0))
 		i++
 		select {
